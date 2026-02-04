@@ -41,4 +41,3 @@ jobs:
           token: ${{ secrets.TFC_TOKEN }}
           run: ${{ steps.create.outputs.run_id }}
           comment: "Approved by GitHub Actions"
-``
