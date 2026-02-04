@@ -1,0 +1,25 @@
+name: Deploy EKS via Terraform Cloud
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Terraform Cloud Apply
+        uses: dflook/terraform-cloud-apply@v1
+        with:
+          organization: your_org_name          # <-- change
+          workspace: eks-workspace             # <-- change
+          api_token: ${{ secrets.TFC_TOKEN }}
+          variables: |
+            region=ap-south-1
+            cluster_name=poc-eks-cluster
