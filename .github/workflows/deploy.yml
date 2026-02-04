@@ -14,7 +14,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 1) Upload the TF config to your TFC workspace
+      # 1) Upload your TF configuration to the TFC workspace
       - name: Upload configuration to TFC
         uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.3.2
         with:
@@ -22,9 +22,9 @@ jobs:
           workspace: eks-terraform-tfc
           token: ${{ secrets.TFC_TOKEN }}
 
-      # 2) Create an applyable run in TFC
+      # 2) Create an apply-able run in TFC (plan completes and waits for confirmation)
       - name: Create applyable run
-        id: run
+        id: create
         uses: hashicorp/tfc-workflows-github/actions/create-run@v1.3.2
         with:
           organization: Poc05-Organization
@@ -32,11 +32,13 @@ jobs:
           token: ${{ secrets.TFC_TOKEN }}
           message: "Apply from push to main"
 
-      # 3) Apply that run
+      # 3) Apply that run in TFC
+      # NOTE: 'apply-run' requires 'run', not 'run_id'; do not pass 'workspace' here
       - name: Apply run
         uses: hashicorp/tfc-workflows-github/actions/apply-run@v1.3.2
         with:
           organization: Poc05-Organization
-          workspace: eks-terraform-tfc
           token: ${{ secrets.TFC_TOKEN }}
-          run_id: ${{ steps.run.outputs.run_id }}
+          run: ${{ steps.create.outputs.run_id }}
+          comment: "Approved by GitHub Actions"
+``
