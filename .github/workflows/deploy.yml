@@ -14,12 +14,30 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Terraform Cloud Apply
-        uses: dflook/terraform-cloud-apply@v1
+      # 1) Upload the Terraform code to your TFC workspace
+      - name: Upload configuration to TFC
+        uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1
         with:
-          organization: Poc05-Organization          # <-- change
-          workspace: eks-terraform-tfc            # <-- change
-          api_token: ${{ secrets.TFC_TOKEN }}
-          variables: |
-            region=ap-south-1
-            cluster_name=poc-eks-cluster
+          organization: Poc05-Organization
+          workspace: eks-terraform-tfc
+          token: ${{ secrets.TFC_TOKEN }}
+
+      # 2) Start a run (plan+apply) in TFC and wait
+      - name: Create applyable run
+        id: run
+        uses: hashicorp/tfc-workflows-github/actions/create-run@v1
+        with:
+          organization: Poc05-Organization
+          workspace: eks-terraform-tfc
+          token: ${{ secrets.TFC_TOKEN }}
+          # plan_only: false (default) -> creates an apply-able run
+          message: "Apply from push to main"
+
+      # 3) Apply that run in TFC
+      - name: Apply run
+        uses: hashicorp/tfc-workflows-github/actions/apply-run@v1
+        with:
+          organization: Poc05-Organization
+          workspace: eks-terraform-tfc
+          token: ${{ secrets.TFC_TOKEN }}
+          run_id: ${{ steps.run.outputs.run_id }}
