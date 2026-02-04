@@ -17,8 +17,8 @@ jobs:
       - name: Terraform Cloud Apply
         uses: dflook/terraform-cloud-apply@v1
         with:
-          organization: your_org_name          # <-- change
-          workspace: eks-workspace             # <-- change
+          organization: Poc05-Organization          # <-- change
+          workspace: eks-terraform-tfc            # <-- change
           api_token: ${{ secrets.TFC_TOKEN }}
           variables: |
             region=ap-south-1
