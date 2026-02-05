@@ -18,7 +18,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+        
+      - name: Wait for workspace to unlock
+        run: sleep 20
+         
       # 1) Upload Terraform configuration to TFC, capture configuration_version_id
       - name: Upload configuration to TFC
         id: upload
