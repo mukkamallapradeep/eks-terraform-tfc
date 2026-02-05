@@ -2,9 +2,9 @@ name: Deploy EKS via Terraform Cloud
 
 on:
   push:
-    branches: ["main"]  # Run only when main is updated
+    branches: ["main"]
 
-# Prevent multiple runs from racing for the same branch
+# Prevent multiple runs from racing on the same ref
 concurrency:
   group: tfc-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -16,12 +16,10 @@ jobs:
       contents: read
 
     steps:
-      # 0) Get the repo contents
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 1) Upload the Terraform configuration to your TFC workspace.
-      #    This returns a configuration_version_id we will use in the next step.
+      # 1) Upload Terraform configuration to TFC, capture configuration_version_id
       - name: Upload configuration to TFC
         id: upload
         uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.3.2
@@ -29,8 +27,10 @@ jobs:
           organization: Poc05-Organization
           workspace: eks-terraform-tfc
           token: ${{ secrets.TFC_TOKEN }}
+          directory: '.'         # <— REQUIRED: path to your TF code ('.' = repo root)
 
-      # 2) Create a real (non-speculative) run in TFC for that exact configuration version.
+      # 2) Create a non-speculative (apply-able) run.
+      #    NOTE: create-run waits until the plan reaches a terminal state.
       - name: Create applyable run
         id: create
         uses: hashicorp/tfc-workflows-github/actions/create-run@v1.3.2
@@ -40,19 +40,10 @@ jobs:
           token: ${{ secrets.TFC_TOKEN }}
           message: "Apply from push to main"
           configuration_version: ${{ steps.upload.outputs.configuration_version_id }}
-          plan_only: false       # true = speculative plan; false = plan that can be applied
-          is_destroy: false      # set true only for destroy runs
+          plan_only: false
+          is_destroy: false
 
-      # 3) Wait until the plan finishes (includes cost/policy checks).
-      - name: Wait for run (plan)
-        uses: hashicorp/tfc-workflows-github/actions/wait-for-run@v1.3.2
-        with:
-          organization: Poc05-Organization
-          token: ${{ secrets.TFC_TOKEN }}
-          run: ${{ steps.create.outputs.run_id }}
-          # fail_on_soft_failed: 'true'  # uncomment to fail if Sentinel soft-fails
-
-      # 4) Apply the run only if it needs confirmation (i.e., Auto apply is OFF in TFC).
+      # 3) Apply only if the run is awaiting confirmation (i.e., Auto Apply is OFF).
       - name: Apply run
         if: ${{ steps.create.outputs.is_confirmable == 'true' }}
         uses: hashicorp/tfc-workflows-github/actions/apply-run@v1.3.2
